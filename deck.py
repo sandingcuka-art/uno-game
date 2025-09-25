@@ -4,13 +4,13 @@ import random
 def build_deck():
     """Create a UNO deck"""
     colors = ["Red", "Green", "Blue", "Yellow"]
-    deck = []
+    deck = []  #where all the cards will be stored
     for color in colors:
         for num in range(10):
             deck.append(f"{color} {num}")
-            if num != 0:
+            if num != 0: #checking if the current num is 1 through 9
                 deck.append(f"{color} {num}")
-    for _ in range(4):
+    for _ in range(4): #starts a loop thats executes four times to add wild cards
         deck.append("Wild")
     return deck
 
@@ -19,7 +19,7 @@ def can_play(card, top_card):
     if card == "Wild":
         return True
     if "Wild" in top_card:  # If top is wild, match chosen color
-        return card.startswith(top_card.split()[-1])
+        return card.startswith(top_card.split()[-1])      #can play if the card matches color or num
     return card.split()[0] == top_card.split()[0] or card.split()[1] == top_card.split()[1]
 
 def main():
@@ -30,8 +30,8 @@ def main():
     random.shuffle(deck)
     
     # Deal cards
-    player_hand = [deck.pop() for _ in range(5)]
-    computer_hand = [deck.pop() for _ in range(5)]
+    player_hand = [deck.pop() for _ in range(7)]
+    computer_hand = [deck.pop() for _ in range(7)]
     
     # Start with first card
     top_card = deck.pop()
