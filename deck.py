@@ -11,7 +11,8 @@ def build_deck():
         for num in range(1, 10): # Two of each 1-9
             deck.append(f"{color} {num}")
             deck.append(f"{color} {num}")
-    
+     
+     
     # Action cards (Two of each per color)
     for color in colors:
         for _ in range(2):
