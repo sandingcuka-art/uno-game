@@ -1,197 +1,127 @@
 import random
 
-def build_deck():
-    """Create a complete UNO deck with all special cards"""
-    colors = ["Red", "Green", "Blue", "Yellow"]
+# Card colors and values
+COLORS = ["Red", "Green", "Blue", "Yellow"]
+NUMBERS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+def create_deck():
+    """Create a simple Uno deck with number cards only"""
     deck = []
-    
-    # Number cards (0-9)
-    for color in colors:
-        deck.append(f"{color} 0") # One zero per color
-        for num in range(1, 10): # Two of each 1-9
-            deck.append(f"{color} {num}")
-            deck.append(f"{color} {num}")
-     
-     
-    # Action cards (Two of each per color)
-    for color in colors:
-        for _ in range(2):
-            deck.append(f"{color} Skip")
-            deck.append(f"{color} Reverse") 
-            deck.append(f"{color} Draw Two")
-    
-    # Wild cards (Four of each)
-    for _ in range(4):
-        deck.append("Wild")
-        deck.append("Wild Draw Four")
-    
+    for color in COLORS:
+        for number in NUMBERS:
+            deck.append(f"{color} {number}")
+            if number != "0":  # Only one zero per color
+                deck.append(f"{color} {number}")  # Two of other numbers
+    random.shuffle(deck)
     return deck
 
-def can_play(card, top_card):
-    """Check if card can be played on top card"""
-    if "Wild" in card:
-        return True
-    
-    # If top card is a wild card with chosen color
-    if "Color:" in top_card:
-        chosen_color = top_card.split("Color: ")[1]
-        return card.startswith(chosen_color)
-    
-    # Normal card matching (color or value)
-    top_parts = top_card.split()
-    card_parts = card.split()
-    return card_parts[0] == top_parts[0] or card_parts[1] == top_parts[1]
+def deal_cards(deck, num_players):
+    """Deal 5 cards to each player"""
+    hands = []
+    for _ in range(num_players):
+        hand = []
+        for _ in range(5):
+            if deck:
+                hand.append(deck.pop())
+        hands.append(hand)
+    return hands
 
-def main():
-    print("=== UNO: You vs Computer ===")
+def can_play(card, top_card):
+    """Check if a card can be played"""
+    card_color, card_number = card.split()
+    top_color, top_number = top_card.split()
+    return card_color == top_color or card_number == top_number
+
+def show_hand(player_hand, top_card):
+    """Show player's hand and which cards can be played"""
+    print(f"\nTop card: {top_card}")
+    print("Your cards:")
+    for i, card in enumerate(player_hand):
+        if can_play(card, top_card):
+            print(f"  {i+1}. {card} [CAN PLAY]")
+        else:
+            print(f"  {i+1}. {card}")
+
+def play_game():
+    """Main game function"""
+    print("🎴 Welcome to Simple UNO! 🎴")
+    print("Match cards by color or number!")
     
     # Setup game
-    deck = build_deck()
-    random.shuffle(deck)
+    deck = create_deck()
+    hands = deal_cards(deck, 2)  # 2 players
+    discard_pile = [deck.pop()]  # Start with one card
     
-    # Deal cards
-    player_hand = [deck.pop() for _ in range(7)] # Start with 7 cards
-    computer_hand = [deck.pop() for _ in range(7)]
+    current_player = 0
+    game_over = False
     
-    # Start with first non-wild card
-    top_card = deck.pop()
-    while "Wild" in top_card:
-        deck.append(top_card)
-        top_card = deck.pop()
-    
-    player_turn = True # True = player's turn, False = computer's turn
-    skip_turn = False
-    draw_amount = 0
-    
-    while True:
-        if skip_turn:
-            print("\n⏭️ Your turn was skipped!")
-            skip_turn = False
-            player_turn = not player_turn
-            continue
+    while not game_over:
+        print(f"\n{'='*40}")
+        print(f"Player {current_player + 1}'s turn!")
         
-        if draw_amount > 0:
-            print(f"\n➕ Draw {draw_amount} cards!")
-            if player_turn:
-                for _ in range(draw_amount):
-                    player_hand.append(deck.pop())
-                print("You drew the cards!")
-            else:
-                for _ in range(draw_amount):
-                    computer_hand.append(deck.pop())
-                print("Computer drew the cards!")
-            draw_amount = 0
-            player_turn = not player_turn
-            continue
+        # Show current player's hand
+        show_hand(hands[current_player], discard_pile[-1])
         
-        # Player's turn
-        if player_turn:
-            print(f"\nTop card: {top_card}")
-            print("\nYour hand:")
-            for i, card in enumerate(player_hand):
-                print(f"{i+1}. {card}")
-            
-            choice = input("Play card number or 'd' to draw: ")
-            
-            if choice.lower() == 'd':
-                player_hand.append(deck.pop())
-                print("You drew a card")
-                player_turn = False
-            else:
+        # Check if player has any playable cards
+        playable_cards = [card for card in hands[current_player] 
+                         if can_play(card, discard_pile[-1])]
+        
+        if playable_cards:
+            # Player chooses a card to play
+            while True:
                 try:
-                    card_index = int(choice) - 1
-                    card_to_play = player_hand[card_index]
+                    choice = input("\nChoose a card to play (number) or 'd' to draw: ")
                     
-                    if can_play(card_to_play, top_card):
-                        top_card = player_hand.pop(card_index)
-                        
-                        # Handle special cards
-                        if "Wild" in top_card:
-                            color = input("Choose color (Red/Green/Blue/Yellow): ")
-                            top_card = f"Wild - Color: {color}"
-                            if "Draw Four" in top_card:
-                                draw_amount = 4
-                                print("➕ Computer must draw 4 cards!")
-                        
-                        elif "Skip" in top_card:
-                            skip_turn = True
-                            print("⏭️ Computer's turn skipped!")
-                        
-                        elif "Reverse" in top_card:
-                            # In 2-player, Reverse acts like Skip
-                            skip_turn = True
-                            print("🔄 Reverse! Computer's turn skipped!")
-                        
-                        elif "Draw Two" in top_card:
-                            draw_amount = 2
-                            print("➕ Computer must draw 2 cards!")
-                        
-                        print(f"You played: {top_card}")
-                        
-                        # Check win
-                        if len(player_hand) == 0:
-                            print("🎉 YOU WIN! 🎉")
+                    if choice.lower() == 'd':
+                        # Draw a card
+                        if deck:
+                            new_card = deck.pop()
+                            hands[current_player].append(new_card)
+                            print(f"You drew: {new_card}")
                             break
+                        else:
+                            print("No cards left to draw!")
+                            continue
+                    
+                    # Play a card
+                    card_index = int(choice) - 1
+                    if 0 <= card_index < len(hands[current_player]):
+                        chosen_card = hands[current_player][card_index]
                         
-                        # Only switch turns if no special card effect
-                        if draw_amount == 0 and not skip_turn:
-                            player_turn = False
+                        if can_play(chosen_card, discard_pile[-1]):
+                            # Play the card
+                            hands[current_player].pop(card_index)
+                            discard_pile.append(chosen_card)
+                            print(f"You played: {chosen_card}")
                             
+                            # Check for win
+                            if len(hands[current_player]) == 0:
+                                print(f"🎉 Player {current_player + 1} wins! 🎉")
+                                game_over = True
+                            break
+                        else:
+                            print("You can't play that card! Choose another.")
                     else:
-                        print("Invalid move! Card doesn't match.")
-                except:
-                    print("Invalid choice!")
-        
-        # Computer's turn
+                        print("Invalid card number!")
+                        
+                except ValueError:
+                    print("Please enter a number or 'd'!")
         else:
-            print(f"\n💻 Computer's turn...")
-            computer_played = False
-            
-            for i, card in enumerate(computer_hand):
-                if can_play(card, top_card):
-                    top_card = computer_hand.pop(i)
-                    
-                    # Handle special cards
-                    if "Wild" in top_card:
-                        color = random.choice(["Red", "Green", "Blue", "Yellow"])
-                        top_card = f"Wild - Color: {color}"
-                        if "Draw Four" in top_card:
-                            draw_amount = 4
-                            print("➕ You must draw 4 cards!")
-                    
-                    elif "Skip" in top_card:
-                        skip_turn = True
-                        print("⏭️ Your turn skipped!")
-                    
-                    elif "Reverse" in top_card:
-                        skip_turn = True
-                        print("🔄 Reverse! Your turn skipped!")
-                    
-                    elif "Draw Two" in top_card:
-                        draw_amount = 2
-                        print("➕ You must draw 2 cards!")
-                    
-                    print(f"Computer played: {top_card}")
-                    computer_played = True
-                    break
-            
-            if not computer_played:
-                computer_hand.append(deck.pop())
-                print("Computer drew a card")
-            
-            # Check if computer wins
-            if len(computer_hand) == 0:
-                print("💻 Computer wins!")
-                break
-            
-            # Only switch turns if no special card effect
-            if draw_amount == 0 and not skip_turn:
-                player_turn = True
+            # No playable cards - must draw
+            print("No playable cards. Drawing a card...")
+            if deck:
+                new_card = deck.pop()
+                hands[current_player].append(new_card)
+                print(f"You drew: {new_card}")
+            else:
+                print("No cards left to draw!")
         
-        # Check if deck is empty
-        if len(deck) == 0:
-            print("Deck empty! Game over.")
-            break
+        # Switch to other player if game isn't over
+        if not game_over:
+            current_player = 1 - current_player  # Switch between 0 and 1
+    
+    print("\nThanks for playing! 🎴")
 
+# Start the game
 if __name__ == "__main__":
-    main() 
+    play_game()
