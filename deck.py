@@ -27,7 +27,7 @@ def check_spam(text):
     if text.count('!') > 2:
         score += 1
 
-    # Lower threshold to catch more spam
+    #Lower threshold to catch more spam
     return score >= 2
 
 def main():
